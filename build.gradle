@@ -1,0 +1,26 @@
+buildscript {
+	repositories.jcenter()
+	dependencies {
+		classpath 'org.xtext:xtext-gradle-plugin:1.0.12'
+	}
+}
+
+ext.xtextVersion = '2.10.0'
+
+group = 'io.typefox'
+version = '0.1.0'
+
+apply plugin: 'java'
+apply plugin: 'org.xtext.xtend'
+apply plugin: 'eclipse'
+apply plugin: 'maven'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories.jcenter()
+
+dependencies {
+	compile gradleApi()
+	compile "org.eclipse.xtend:org.eclipse.xtend.lib:$xtextVersion"
+}
