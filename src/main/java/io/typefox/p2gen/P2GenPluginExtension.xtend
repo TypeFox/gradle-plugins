@@ -1,6 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2016 TypeFox GmbH (http://www.typefox.io) and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package io.typefox.p2gen
 
+import groovy.lang.Closure
 import java.nio.charset.Charset
+import java.util.List
 import org.eclipse.xtend.lib.annotations.Accessors
 
 @Accessors(PUBLIC_GETTER)
@@ -8,7 +17,7 @@ class P2GenPluginExtension {
 	
 	Charset charset = Charset.forName('UTF8')
 	
-	String p2BuildPath = 'releng/p2'
+	String genPath = 'releng'
 	
 	String localMavenRepo = 'build/maven-repository'
 	
@@ -16,12 +25,16 @@ class P2GenPluginExtension {
 	
 	String tychoVersion = '0.25.0'
 	
+	boolean includeDependencies
+	
+	val List<TargetRepository> targetRepositories = newArrayList
+	
 	def void charset(Charset charset) {
 		this.charset = charset
 	}
 	
-	def void p2BuildPath(String p2BuildPath) {
-		this.p2BuildPath = p2BuildPath
+	def void genPath(String genPath) {
+		this.genPath = genPath
 	}
 	
 	def void localMavenRepo(String localMavenRepo) {
@@ -34,6 +47,19 @@ class P2GenPluginExtension {
 	
 	def void tychoVersion(String tychoVersion) {
 		this.tychoVersion = tychoVersion
+	}
+	
+	def void includeDependencies(boolean includeDependencies) {
+		this.includeDependencies = includeDependencies
+	}
+	
+	def targetRepository(Closure<TargetRepository> configure) {
+		val result = new TargetRepository
+		configure.delegate = result
+		configure.resolveStrategy = Closure.DELEGATE_FIRST
+		configure.call()
+		targetRepositories += result
+		return result
 	}
 	
 }

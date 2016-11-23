@@ -1,3 +1,10 @@
+/*******************************************************************************
+ * Copyright (c) 2016 TypeFox GmbH (http://www.typefox.io) and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *******************************************************************************/
 package io.typefox.p2gen
 
 import com.google.common.base.Strings
@@ -21,33 +28,45 @@ class P2GenPlugin implements Plugin<Project> {
 		project.task('generateP2Build') => [
 			group = 'Build Setup'
 			description = 'Generates a Tycho build to assemble a P2 repository.'
-			doLast[
-				val p2BuildDir = new File(rootDir, p2gen.p2BuildPath)
-				p2BuildDir.mkdirs()
-				Files.write(generatePomXml, new File(p2BuildDir, 'pom.xml'), p2gen.charset)
+			
+			doLast [
+				val genDir = new File(rootDir, p2gen.genPath)
+				genDir.mkdirs()
+				Files.write(generateParentPom, new File(genDir, 'pom.xml'), p2gen.charset)
+				
+				val p2BuildDir = new File(genDir, 'p2')
+				p2BuildDir.mkdir()
+				Files.write(generateP2Pom, new File(p2BuildDir, 'pom.xml'), p2gen.charset)
 				Files.write(generateCategoryXml, new File(p2BuildDir, 'category.xml'), p2gen.charset)
+				
+				if (!p2gen.targetRepositories.empty) {
+					val targetBuildDir = new File(genDir, 'releng-target')
+					targetBuildDir.mkdir()
+					Files.write(generateTargetPom, new File(targetBuildDir, 'pom.xml'), p2gen.charset)
+					Files.write(generateTargetFile, new File(targetBuildDir, project.name + '.target.target'), p2gen.charset)
+				}
 			]
 		]
 	}
 	
-	def private generatePomXml() '''
+	def private generateParentPom() '''
 		<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 			<modelVersion>4.0.0</modelVersion>
+		
+			<groupId>«group»</groupId>
+			<artifactId>«name».releng</artifactId>
+			<version>«version»</version>
+			<packaging>pom</packaging>
 		
 			<properties>
 				<tycho-version>«p2gen.tychoVersion»</tycho-version>
 			</properties>
 		
-			<groupId>«group»</groupId>
-			<artifactId>«name».p2-repository</artifactId>
-			<version>«version»</version>
-			<packaging>eclipse-repository</packaging>
-		
 			<repositories>
 				<repository>
 					<id>local-gradle-result</id>
-					<url>file:«mavenRepoPath»</url>
+					<url>file:${basedir}«Strings.repeat('/..', p2gen.genPath.split('/').filter[!empty].size)»/«p2gen.localMavenRepo»</url>
 				</repository>
 				<repository>
 					<snapshots>
@@ -72,14 +91,23 @@ class P2GenPlugin implements Plugin<Project> {
 						<classifier>sources</classifier>
 					</dependency>
 				«ENDFOR»
-				«FOR dependency : dependencies»
-					<dependency>
-						<groupId>«dependency.group»</groupId>
-						<artifactId>«dependency.name»</artifactId>
-						<version>«dependency.version»</version>
-					</dependency>
-				«ENDFOR»
+				«IF p2gen.includeDependencies»
+					«FOR dependency : allDependencies»
+						<dependency>
+							<groupId>«dependency.group»</groupId>
+							<artifactId>«dependency.name»</artifactId>
+							<version>«dependency.version»</version>
+						</dependency>
+					«ENDFOR»
+				«ENDIF»
 			</dependencies>
+
+			<modules>
+				«IF !p2gen.targetRepositories.empty»
+					<module>releng-target</module>
+				«ENDIF»
+				<module>p2</module>
+			</modules>
 		
 			<build>
 				<plugins>
@@ -95,6 +123,15 @@ class P2GenPlugin implements Plugin<Project> {
 						<version>${tycho-version}</version>
 						<configuration>
 							<pomDependencies>consider</pomDependencies>
+							«IF !p2gen.targetRepositories.empty»
+								<target>
+									<artifact>
+										<groupId>«group»</groupId>
+										<artifactId>«name».target</artifactId>
+										<version>«version»</version>
+									</artifact>
+								</target>
+							«ENDIF»
 							<environments>
 								<environment>
 									<os>macosx</os>
@@ -114,6 +151,32 @@ class P2GenPlugin implements Plugin<Project> {
 							</environments>
 						</configuration>
 					</plugin>
+				</plugins>
+			</build>
+		</project>
+	'''
+	
+	def private generateP2Pom() '''
+		<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+			<modelVersion>4.0.0</modelVersion>
+		
+			<artifactId>«name».p2-repository</artifactId>
+			<packaging>eclipse-repository</packaging>
+		
+			<parent>
+				<groupId>«group»</groupId>
+				<artifactId>«name».releng</artifactId>
+				<version>«version»</version>
+				<relativePath>..</relativePath>
+			</parent>
+		
+			<properties>
+				<tycho-version>«p2gen.tychoVersion»</tycho-version>
+			</properties>
+		
+			<build>
+				<plugins>
 					<plugin>
 						<groupId>org.eclipse.tycho</groupId>
 						<artifactId>tycho-p2-repository-plugin</artifactId>
@@ -139,7 +202,7 @@ class P2GenPlugin implements Plugin<Project> {
 								</goals>
 								<configuration>
 									<tasks>
-										<copy todir="«p2RepoPath»">
+										<copy todir="${basedir}/..«Strings.repeat('/..', p2gen.genPath.split('/').filter[!empty].size)»/«p2gen.localP2Repo»">
 											<fileset dir="${basedir}/target/repository/" />
 										</copy>
 									</tasks>
@@ -152,15 +215,7 @@ class P2GenPlugin implements Plugin<Project> {
 		</project>
 	'''
 	
-	def private getMavenRepoPath() {
-		'''${basedir}«Strings.repeat('/..', p2gen.p2BuildPath.split('/').filter[!empty].size)»/«p2gen.localMavenRepo»'''
-	}
-	
-	def private getP2RepoPath() {
-		'''${basedir}«Strings.repeat('/..', p2gen.p2BuildPath.split('/').filter[!empty].size)»/«p2gen.localP2Repo»'''
-	}
-	
-	def private getDependencies() {
+	def private getAllDependencies() {
 		val Set<Dependency> dependencies = newLinkedHashSet
 		for (subproject : subprojects) {
 			dependencies += subproject.configurations.getByName('compile').allDependencies.filter[ d |
@@ -195,5 +250,39 @@ class P2GenPlugin implements Plugin<Project> {
 		else
 			return versionString
 	}
+	
+	def private generateTargetPom() '''
+		<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+			<modelVersion>4.0.0</modelVersion>
+		
+			<artifactId>«name».target</artifactId>
+			<packaging>eclipse-target-definition</packaging>
+		
+			<parent>
+				<groupId>«group»</groupId>
+				<artifactId>«name».releng</artifactId>
+				<version>«version»</version>
+				<relativePath>..</relativePath>
+			</parent>
+		</project>
+	'''
+	
+	def private generateTargetFile() '''
+		<?xml version="1.0" encoding="UTF-8"?>
+		<?pde version="3.8"?>
+		<target name="org.eclipse.xtext.helios.target" sequenceNumber="0">
+			<locations>
+				«FOR targetRepo : p2gen.targetRepositories»
+					<location includeAllPlatforms="false" includeConfigurePhase="«targetRepo.includeConfigurePhase»" includeMode="planner" includeSource="«targetRepo.includeSource»" type="InstallableUnit">
+						«FOR unit : targetRepo.units»
+							<unit id="«unit»" version="0.0.0"/>
+						«ENDFOR»
+						<repository location="«targetRepo.location»"/>
+					</location>
+				«ENDFOR»
+			</locations>
+		</target>
+	'''
 	
 }
