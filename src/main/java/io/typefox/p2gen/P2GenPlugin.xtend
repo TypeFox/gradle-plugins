@@ -49,6 +49,10 @@ class P2GenPlugin implements Plugin<Project> {
 		]
 	}
 	
+	def private getFilteredSubprojects() {
+		project.subprojects.filter[!p2gen.excludes.contains(name)]
+	}
+	
 	def private generateParentPom() '''
 		<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -61,12 +65,13 @@ class P2GenPlugin implements Plugin<Project> {
 		
 			<properties>
 				<tycho-version>«p2gen.tychoVersion»</tycho-version>
+				<root-dir>${basedir}«Strings.repeat('/..', p2gen.genPath.split('/').filter[!empty].size)»</root-dir>
 			</properties>
 		
 			<repositories>
 				<repository>
 					<id>local-gradle-result</id>
-					<url>file:${basedir}«Strings.repeat('/..', p2gen.genPath.split('/').filter[!empty].size)»/«p2gen.localMavenRepo»</url>
+					<url>file:${root-dir}/«p2gen.localMavenRepo»</url>
 				</repository>
 				<repository>
 					<snapshots>
@@ -78,7 +83,7 @@ class P2GenPlugin implements Plugin<Project> {
 			</repositories>
 		
 			<dependencies>
-				«FOR subproject : subprojects»
+				«FOR subproject : filteredSubprojects»
 					<dependency>
 						<groupId>«subproject.group»</groupId>
 						<artifactId>«subproject.name»</artifactId>
@@ -173,6 +178,7 @@ class P2GenPlugin implements Plugin<Project> {
 		
 			<properties>
 				<tycho-version>«p2gen.tychoVersion»</tycho-version>
+				<root-dir>${basedir}/..«Strings.repeat('/..', p2gen.genPath.split('/').filter[!empty].size)»</root-dir>
 			</properties>
 		
 			<build>
@@ -202,7 +208,7 @@ class P2GenPlugin implements Plugin<Project> {
 								</goals>
 								<configuration>
 									<tasks>
-										<copy todir="${basedir}/..«Strings.repeat('/..', p2gen.genPath.split('/').filter[!empty].size)»/«p2gen.localP2Repo»">
+										<copy todir="${root-dir}/«p2gen.localP2Repo»">
 											<fileset dir="${basedir}/target/repository/" />
 										</copy>
 									</tasks>
@@ -217,7 +223,7 @@ class P2GenPlugin implements Plugin<Project> {
 	
 	def private getAllDependencies() {
 		val Set<Dependency> dependencies = newLinkedHashSet
-		for (subproject : subprojects) {
+		for (subproject : filteredSubprojects) {
 			dependencies += subproject.configurations.getByName('compile').allDependencies.filter[ d |
 				!subprojects.exists[p | p.group == d.group && p.name == d.name]
 			]
@@ -228,7 +234,7 @@ class P2GenPlugin implements Plugin<Project> {
 	def private generateCategoryXml() '''
 		<?xml version="1.0" encoding="UTF-8"?>
 		<site>
-			«FOR subproject : subprojects»
+			«FOR subproject : filteredSubprojects»
 				<bundle id="«subproject.name»" version="«subproject.version.withoutQualifier».qualifier">
 					<category name="«name»"/>
 				</bundle>

@@ -10,6 +10,7 @@ package io.typefox.p2gen
 import groovy.lang.Closure
 import java.nio.charset.Charset
 import java.util.List
+import java.util.Set
 import org.eclipse.xtend.lib.annotations.Accessors
 
 @Accessors(PUBLIC_GETTER)
@@ -28,6 +29,8 @@ class P2GenPluginExtension {
 	boolean includeDependencies
 	
 	val List<TargetRepository> targetRepositories = newArrayList
+	
+	val Set<String> excludes = newHashSet
 	
 	def void charset(Charset charset) {
 		this.charset = charset
@@ -60,6 +63,10 @@ class P2GenPluginExtension {
 		configure.call()
 		targetRepositories += result
 		return result
+	}
+	
+	def void exclude(String module) {
+		excludes += module
 	}
 	
 }
