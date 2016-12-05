@@ -9,7 +9,10 @@ package io.typefox.p2gen
 
 import com.google.common.base.Strings
 import com.google.common.io.Files
+import groovy.util.XmlSlurper
+import groovy.util.slurpersupport.GPathResult
 import java.io.File
+import java.util.List
 import java.util.Set
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -21,6 +24,7 @@ class P2GenPlugin implements Plugin<Project> {
 	
 	extension Project project
 	P2GenPluginExtension p2gen
+	List<Feature> features = newArrayList
 	
 	override apply(Project project) {
 		this.project = project
@@ -30,6 +34,7 @@ class P2GenPlugin implements Plugin<Project> {
 			description = 'Generates a Tycho build to assemble a P2 repository.'
 			
 			doLast [
+				loadFeatures()
 				val genDir = new File(rootDir, p2gen.genPath)
 				genDir.mkdirs()
 				Files.write(generateParentPom, new File(genDir, 'pom.xml'), p2gen.charset)
@@ -44,6 +49,13 @@ class P2GenPlugin implements Plugin<Project> {
 					targetBuildDir.mkdir()
 					Files.write(generateTargetPom, new File(targetBuildDir, 'pom.xml'), p2gen.charset)
 					Files.write(generateTargetFile, new File(targetBuildDir, project.name + '.target.target'), p2gen.charset)
+				}
+				
+				for (feature : features) {
+					val featureBuildDir = new File(genDir, feature.path)
+					featureBuildDir.mkdir()
+					Files.write(generateFeaturePom(feature), new File(featureBuildDir, 'pom.xml'), p2gen.charset)
+					Files.write(generateFeatureBuildProperties(feature), new File(featureBuildDir, 'build.properties'), p2gen.charset)
 				}
 			]
 		]
@@ -112,6 +124,9 @@ class P2GenPlugin implements Plugin<Project> {
 					<module>releng-target</module>
 				«ENDIF»
 				<module>p2</module>
+				«FOR feature : features»
+					<module>«feature.path»</module>
+				«ENDFOR»
 			</modules>
 		
 			<build>
@@ -234,13 +249,25 @@ class P2GenPlugin implements Plugin<Project> {
 	def private generateCategoryXml() '''
 		<?xml version="1.0" encoding="UTF-8"?>
 		<site>
+			«FOR feature : features»
+				<feature url="features/«feature.id»_«feature.version».jar" id="«feature.id»" version="«feature.version»">
+					<category name="«name»"/>
+				</feature>
+			«ENDFOR»
 			«FOR subproject : filteredSubprojects»
-				<bundle id="«subproject.name»" version="«subproject.version.withoutQualifier».qualifier">
-					<category name="«name»"/>
-				</bundle>
-				<bundle id="«subproject.name».source" version="«subproject.version.withoutQualifier».qualifier">
-					<category name="«name»"/>
-				</bundle>
+				«IF !features.exists[plugins.contains(subproject.name)]»
+					<bundle id="«subproject.name»" version="«subproject.version.withoutQualifier».qualifier">
+						<category name="«name»"/>
+					</bundle>
+				«ENDIF»
+				«IF !features.exists[plugins.contains(subproject.name + '.source')]»
+					<bundle id="«subproject.name».source" version="«subproject.version.withoutQualifier».qualifier">
+						<category name="«name»"/>
+					</bundle>
+				«ENDIF»
+			«ENDFOR»
+			«FOR bundle : p2gen.additionalBundles»
+				<bundle id="«bundle.id»"«IF !bundle.version.nullOrEmpty» version="«bundle.version»"«ENDIF»/>
 			«ENDFOR»
 		   <category-def name="«name»" label="«name.toFirstUpper»"/>
 		</site>
@@ -290,5 +317,54 @@ class P2GenPlugin implements Plugin<Project> {
 			</locations>
 		</target>
 	'''
+	
+	def private generateFeaturePom(Feature feature) '''
+		<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+			<modelVersion>4.0.0</modelVersion>
+		
+			<artifactId>«feature.id»</artifactId>
+			<packaging>eclipse-feature</packaging>
+		
+			<parent>
+				<groupId>«group»</groupId>
+				<artifactId>«name».releng</artifactId>
+				<version>«version»</version>
+				<relativePath>..</relativePath>
+			</parent>
+		</project>
+	'''
+	
+	def private generateFeatureBuildProperties(Feature feature) '''
+		bin.includes = feature.xml
+	'''
+	
+	def private void loadFeatures() {
+		for (path : p2gen.features) {
+			val feature = new Feature
+			feature.path = path
+			try {
+				val slurpResult = new XmlSlurper().parse(new File('''«rootDir»/«p2gen.genPath»/«path»/feature.xml'''))
+				if (slurpResult.name == 'feature') {
+					feature.id = slurpResult.getProperty('@id')?.toString
+					feature.version = slurpResult.getProperty('@version')?.toString
+					val content = slurpResult.children
+					for (var i = 0; i < content.size; i++) {
+						val elem = content.getAt(i)
+						if (elem instanceof GPathResult) {
+							if (elem.name == 'plugin') {
+								val pluginId = elem.getProperty('@id')?.toString
+								if (pluginId !== null)
+									feature.plugins += pluginId
+							}
+						}
+					}
+				}
+			} catch (Exception e) {
+				logger.warn('Could not read feature.xml of ' + path, e)
+			}
+			features += feature
+		}
+	}
 	
 }

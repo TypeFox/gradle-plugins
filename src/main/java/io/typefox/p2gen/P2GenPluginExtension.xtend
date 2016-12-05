@@ -12,6 +12,7 @@ import java.nio.charset.Charset
 import java.util.List
 import java.util.Set
 import org.eclipse.xtend.lib.annotations.Accessors
+import org.gradle.api.Action
 
 @Accessors(PUBLIC_GETTER)
 class P2GenPluginExtension {
@@ -28,9 +29,13 @@ class P2GenPluginExtension {
 	
 	boolean includeDependencies
 	
+	val List<String> features = newArrayList
+	
 	val List<TargetRepository> targetRepositories = newArrayList
 	
 	val Set<String> excludes = newHashSet
+	
+	val List<Bundle> additionalBundles = newArrayList
 	
 	def void charset(Charset charset) {
 		this.charset = charset
@@ -56,6 +61,17 @@ class P2GenPluginExtension {
 		this.includeDependencies = includeDependencies
 	}
 	
+	def void feature(String feature) {
+		features += feature
+	}
+	
+	def targetRepository(Action<TargetRepository> configure) {
+		val result = new TargetRepository
+		configure.execute(result)
+		targetRepositories += result
+		return result
+	}
+	
 	def targetRepository(Closure<TargetRepository> configure) {
 		val result = new TargetRepository
 		configure.delegate = result
@@ -67,6 +83,29 @@ class P2GenPluginExtension {
 	
 	def void exclude(String module) {
 		excludes += module
+	}
+	
+	def additionalBundle(String id) {
+		val result = new Bundle
+		result.id(id)
+		additionalBundles += result
+		return result
+	}
+	
+	def additionalBundle(Action<Bundle> configure) {
+		val result = new Bundle
+		configure.execute(result)
+		additionalBundles += result
+		return result
+	}
+	
+	def additionalBundle(Closure<Bundle> configure) {
+		val result = new Bundle
+		configure.delegate = result
+		configure.resolveStrategy = Closure.DELEGATE_FIRST
+		configure.call()
+		additionalBundles += result
+		return result
 	}
 	
 }
