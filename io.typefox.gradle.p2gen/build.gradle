@@ -1,0 +1,2 @@
+ext.title = 'P2 Generator'
+description = 'A Gradle plugin that generates a Tycho build for creating a p2 repository'
