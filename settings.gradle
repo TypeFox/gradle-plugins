@@ -1,1 +1,3 @@
-rootProject.name = 'p2-repo-gen'
+rootProject.name = 'gradle-plugins'
+
+include 'io.typefox.gradle.p2gen'
