@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package io.typefox.p2gen
+package io.typefox.gradle.p2gen
 
 import com.google.common.base.Strings
 import com.google.common.io.Files
@@ -357,3 +357,4 @@ class P2GenPlugin implements Plugin<Project> {
 	}
 	
 }
+				

@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *******************************************************************************/
-package io.typefox.p2gen
+package io.typefox.gradle.p2gen
 
 import groovy.lang.Closure
 import java.nio.charset.Charset
@@ -53,10 +53,6 @@ class P2GenPluginExtension {
 	
 	def void tychoVersion(String tychoVersion) {
 		this.tychoVersion = tychoVersion
-	}
-	
-	def void includeDependencies(boolean includeDependencies) {
-		this.includeDependencies = includeDependencies
 	}
 	
 	def void feature(String feature) {
