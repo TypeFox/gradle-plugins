@@ -29,11 +29,11 @@ class P2GenPluginExtension {
 	
 	val List<String> features = newArrayList
 	
-	val List<TargetRepository> targetRepositories = newArrayList
+	val List<RepositoryDependency> dependencies = newArrayList
 	
 	val Set<String> excludes = newHashSet
 	
-	val List<Bundle> additionalBundles = newArrayList
+	val List<InstallableUnit> additionalUnits = newArrayList
 	
 	def void charset(Charset charset) {
 		this.charset = charset
@@ -59,19 +59,19 @@ class P2GenPluginExtension {
 		features += feature
 	}
 	
-	def targetRepository(Action<TargetRepository> configure) {
-		val result = new TargetRepository
+	def dependencies(Action<RepositoryDependency> configure) {
+		val result = new RepositoryDependency
 		configure.execute(result)
-		targetRepositories += result
+		dependencies += result
 		return result
 	}
 	
-	def targetRepository(Closure<TargetRepository> configure) {
-		val result = new TargetRepository
+	def dependencies(Closure<RepositoryDependency> configure) {
+		val result = new RepositoryDependency
 		configure.delegate = result
 		configure.resolveStrategy = Closure.DELEGATE_FIRST
 		configure.call()
-		targetRepositories += result
+		dependencies += result
 		return result
 	}
 	
@@ -82,23 +82,46 @@ class P2GenPluginExtension {
 	def additionalBundle(String id) {
 		val result = new Bundle
 		result.id(id)
-		additionalBundles += result
+		additionalUnits += result
 		return result
 	}
 	
-	def additionalBundle(Action<Bundle> configure) {
+	def additionalBundle(Action<InstallableUnit> configure) {
 		val result = new Bundle
 		configure.execute(result)
-		additionalBundles += result
+		additionalUnits += result
 		return result
 	}
 	
-	def additionalBundle(Closure<Bundle> configure) {
+	def additionalBundle(Closure<InstallableUnit> configure) {
 		val result = new Bundle
 		configure.delegate = result
 		configure.resolveStrategy = Closure.DELEGATE_FIRST
 		configure.call()
-		additionalBundles += result
+		additionalUnits += result
+		return result
+	}
+	
+	def additionalFeature(String id) {
+		val result = new Feature
+		result.id(id)
+		additionalUnits += result
+		return result
+	}
+	
+	def additionalFeature(Action<InstallableUnit> configure) {
+		val result = new Feature
+		configure.execute(result)
+		additionalUnits += result
+		return result
+	}
+	
+	def additionalFeature(Closure<InstallableUnit> configure) {
+		val result = new Feature
+		configure.delegate = result
+		configure.resolveStrategy = Closure.DELEGATE_FIRST
+		configure.call()
+		additionalUnits += result
 		return result
 	}
 	

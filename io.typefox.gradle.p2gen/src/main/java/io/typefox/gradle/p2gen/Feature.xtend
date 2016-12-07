@@ -11,13 +11,9 @@ import java.util.Set
 import org.eclipse.xtend.lib.annotations.Accessors
 
 @Accessors
-class Feature {
+class Feature extends InstallableUnit {
 	
 	String path
-	
-	String id
-	
-	String version
 	
 	val Set<String> plugins = newHashSet
 	

@@ -13,18 +13,18 @@ import org.eclipse.xtend.lib.annotations.Accessors
 import org.gradle.api.Action
 
 @Accessors(PUBLIC_GETTER)
-class TargetRepository {
+class RepositoryDependency {
 	
-	String location
+	String repositoryUrl
 	
 	boolean includeConfigurePhase
 	
 	boolean includeSource
 	
-	val List<Bundle> units = newArrayList
+	val List<InstallableUnit> units = newArrayList
 	
-	def void location(String location) {
-		this.location = location
+	def void repositoryUrl(String repositoryUrl) {
+		this.repositoryUrl = repositoryUrl
 	}
 	
 	def void includeConfigurePhase(boolean includeConfigurePhase) {
@@ -35,22 +35,45 @@ class TargetRepository {
 		this.includeSource = includeSource
 	}
 	
-	def unit(String id) {
+	def bundle(String id) {
 		val result = new Bundle
 		result.id(id)
 		units += result
 		return result
 	}
 	
-	def unit(Action<Bundle> configure) {
+	def bundle(Action<InstallableUnit> configure) {
 		val result = new Bundle
 		configure.execute(result)
 		units += result
 		return result
 	}
 	
-	def unit(Closure<Bundle> configure) {
+	def bundle(Closure<InstallableUnit> configure) {
 		val result = new Bundle
+		configure.delegate = result
+		configure.resolveStrategy = Closure.DELEGATE_FIRST
+		configure.call()
+		units += result
+		return result
+	}
+	
+	def feature(String id) {
+		val result = new Feature
+		result.id(id)
+		units += result
+		return result
+	}
+	
+	def feature(Action<InstallableUnit> configure) {
+		val result = new Feature
+		configure.execute(result)
+		units += result
+		return result
+	}
+	
+	def feature(Closure<InstallableUnit> configure) {
+		val result = new Feature
 		configure.delegate = result
 		configure.resolveStrategy = Closure.DELEGATE_FIRST
 		configure.call()

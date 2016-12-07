@@ -43,7 +43,7 @@ class P2GenPlugin implements Plugin<Project> {
 				Files.write(generateP2Pom, new File(p2BuildDir, 'pom.xml'), p2gen.charset)
 				Files.write(generateCategoryXml, new File(p2BuildDir, 'category.xml'), p2gen.charset)
 				
-				if (!p2gen.targetRepositories.empty) {
+				if (!p2gen.dependencies.empty) {
 					val targetBuildDir = new File(genDir, 'releng-target')
 					targetBuildDir.mkdir()
 					Files.write(generateTargetPom, new File(targetBuildDir, 'pom.xml'), p2gen.charset)
@@ -110,7 +110,7 @@ class P2GenPlugin implements Plugin<Project> {
 			</dependencies>
 
 			<modules>
-				«IF !p2gen.targetRepositories.empty»
+				«IF !p2gen.dependencies.empty»
 					<module>releng-target</module>
 				«ENDIF»
 				<module>p2</module>
@@ -133,7 +133,7 @@ class P2GenPlugin implements Plugin<Project> {
 						<version>${tycho-version}</version>
 						<configuration>
 							<pomDependencies>consider</pomDependencies>
-							«IF !p2gen.targetRepositories.empty»
+							«IF !p2gen.dependencies.empty»
 								<target>
 									<artifact>
 										<groupId>«group»</groupId>
@@ -230,7 +230,7 @@ class P2GenPlugin implements Plugin<Project> {
 		<?xml version="1.0" encoding="UTF-8"?>
 		<site>
 			«FOR feature : features»
-				<feature url="features/«feature.id»_«feature.version».jar" id="«feature.id»" version="«feature.version»">
+				<feature id="«feature.id»" version="«feature.version»">
 					<category name="«name»"/>
 				</feature>
 			«ENDFOR»
@@ -246,8 +246,12 @@ class P2GenPlugin implements Plugin<Project> {
 					</bundle>
 				«ENDIF»
 			«ENDFOR»
-			«FOR bundle : p2gen.additionalBundles»
-				<bundle id="«bundle.id»" version="«IF bundle.version.nullOrEmpty»0.0.0«ELSE»«bundle.version»«ENDIF»"/>
+			«FOR unit : p2gen.additionalUnits»
+				«IF unit instanceof Feature»
+					<feature«
+				ELSE»
+					<bundle«
+				ENDIF» id="«unit.id»" version="«IF unit.version.nullOrEmpty»0.0.0«ELSE»«unit.version»«ENDIF»"/>
 			«ENDFOR»
 		   <category-def name="«name»" label="«name.toFirstUpper»"/>
 		</site>
@@ -286,12 +290,13 @@ class P2GenPlugin implements Plugin<Project> {
 		<?pde version="3.8"?>
 		<target name="org.eclipse.xtext.helios.target" sequenceNumber="0">
 			<locations>
-				«FOR targetRepo : p2gen.targetRepositories»
-					<location includeAllPlatforms="false" includeConfigurePhase="«targetRepo.includeConfigurePhase»" includeMode="planner" includeSource="«targetRepo.includeSource»" type="InstallableUnit">
-						«FOR unit : targetRepo.units»
-							<unit id="«unit.id»" version="«IF unit.version.nullOrEmpty»0.0.0«ELSE»«unit.version»«ENDIF»"/>
+				«FOR dep : p2gen.dependencies»
+					<location includeAllPlatforms="false" includeConfigurePhase="«dep.includeConfigurePhase»" includeMode="planner" includeSource="«dep.includeSource»" type="InstallableUnit">
+						<repository location="«dep.repositoryUrl»"/>
+						«FOR unit : dep.units»
+							<unit id="«unit.id»«IF unit instanceof Feature».feature.group«ENDIF»" version="«
+								IF unit.version.nullOrEmpty»0.0.0«ELSE»«unit.version»«ENDIF»"/>
 						«ENDFOR»
-						<repository location="«targetRepo.location»"/>
 					</location>
 				«ENDFOR»
 			</locations>
@@ -335,8 +340,8 @@ class P2GenPlugin implements Plugin<Project> {
 			try {
 				val slurpResult = new XmlSlurper().parse(new File('''«rootDir»/«p2gen.genPath»/«featurePath»/feature.xml'''))
 				if (slurpResult.name == 'feature') {
-					feature.id = slurpResult.getProperty('@id')?.toString
-					feature.version = slurpResult.getProperty('@version')?.toString
+					feature.id(slurpResult.getProperty('@id')?.toString)
+					feature.version(slurpResult.getProperty('@version')?.toString)
 					val content = slurpResult.children
 					for (var i = 0; i < content.size; i++) {
 						val elem = content.getAt(i)
