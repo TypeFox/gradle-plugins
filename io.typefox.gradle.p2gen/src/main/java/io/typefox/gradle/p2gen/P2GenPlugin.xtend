@@ -16,6 +16,7 @@ import java.io.FilenameFilter
 import java.util.List
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 
 class P2GenPlugin implements Plugin<Project> {
 	
@@ -84,13 +85,17 @@ class P2GenPlugin implements Plugin<Project> {
 					<id>local-gradle-result</id>
 					<url>file:${root-dir}/«p2gen.localMavenRepo»</url>
 				</repository>
-				<repository>
-					<snapshots>
-						<enabled>false</enabled>
-					</snapshots>
-					<id>jcenter</id>
-					<url>http://jcenter.bintray.com</url>
-				</repository>
+				«FOR repo : filteredSubprojects.findFirst[plugins.hasPlugin('java')].repositories.filter(MavenArtifactRepository)»
+					<repository>
+						<id>«repo.name»</id>
+						<url>«repo.url»</url>
+						«IF repo.name == 'BintrayJCenter'»
+							<snapshots>
+								<enabled>false</enabled>
+							</snapshots>
+						«ENDIF»
+					</repository>
+				«ENDFOR»
 			</repositories>
 		
 			<dependencies>
