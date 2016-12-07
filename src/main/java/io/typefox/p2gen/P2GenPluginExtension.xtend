@@ -27,8 +27,6 @@ class P2GenPluginExtension {
 	
 	String tychoVersion = '0.25.0'
 	
-	boolean includeDependencies
-	
 	val List<String> features = newArrayList
 	
 	val List<TargetRepository> targetRepositories = newArrayList

@@ -12,11 +12,10 @@ import com.google.common.io.Files
 import groovy.util.XmlSlurper
 import groovy.util.slurpersupport.GPathResult
 import java.io.File
+import java.io.FilenameFilter
 import java.util.List
-import java.util.Set
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Dependency
 
 class P2GenPlugin implements Plugin<Project> {
 	
@@ -108,15 +107,6 @@ class P2GenPlugin implements Plugin<Project> {
 						<classifier>sources</classifier>
 					</dependency>
 				«ENDFOR»
-				«IF p2gen.includeDependencies»
-					«FOR dependency : allDependencies»
-						<dependency>
-							<groupId>«dependency.group»</groupId>
-							<artifactId>«dependency.name»</artifactId>
-							<version>«dependency.version»</version>
-						</dependency>
-					«ENDFOR»
-				«ENDIF»
 			</dependencies>
 
 			<modules>
@@ -236,16 +226,6 @@ class P2GenPlugin implements Plugin<Project> {
 		</project>
 	'''
 	
-	def private getAllDependencies() {
-		val Set<Dependency> dependencies = newLinkedHashSet
-		for (subproject : filteredSubprojects) {
-			dependencies += subproject.configurations.getByName('compile').allDependencies.filter[ d |
-				!subprojects.exists[p | p.group == d.group && p.name == d.name]
-			]
-		}
-		return dependencies
-	}
-	
 	def private generateCategoryXml() '''
 		<?xml version="1.0" encoding="UTF-8"?>
 		<site>
@@ -267,7 +247,7 @@ class P2GenPlugin implements Plugin<Project> {
 				«ENDIF»
 			«ENDFOR»
 			«FOR bundle : p2gen.additionalBundles»
-				<bundle id="«bundle.id»"«IF !bundle.version.nullOrEmpty» version="«bundle.version»"«ENDIF»/>
+				<bundle id="«bundle.id»" version="«IF bundle.version.nullOrEmpty»0.0.0«ELSE»«bundle.version»«ENDIF»"/>
 			«ENDFOR»
 		   <category-def name="«name»" label="«name.toFirstUpper»"/>
 		</site>
@@ -309,7 +289,7 @@ class P2GenPlugin implements Plugin<Project> {
 				«FOR targetRepo : p2gen.targetRepositories»
 					<location includeAllPlatforms="false" includeConfigurePhase="«targetRepo.includeConfigurePhase»" includeMode="planner" includeSource="«targetRepo.includeSource»" type="InstallableUnit">
 						«FOR unit : targetRepo.units»
-							<unit id="«unit»" version="0.0.0"/>
+							<unit id="«unit.id»" version="«IF unit.version.nullOrEmpty»0.0.0«ELSE»«unit.version»«ENDIF»"/>
 						«ENDFOR»
 						<repository location="«targetRepo.location»"/>
 					</location>
@@ -323,6 +303,9 @@ class P2GenPlugin implements Plugin<Project> {
 			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 			<modelVersion>4.0.0</modelVersion>
 		
+			«IF filteredSubprojects.exists[group == project.group && name == feature.id]»
+				<groupId>«group».feature</groupId>
+			«ENDIF»
 			<artifactId>«feature.id»</artifactId>
 			<packaging>eclipse-feature</packaging>
 		
@@ -335,16 +318,22 @@ class P2GenPlugin implements Plugin<Project> {
 		</project>
 	'''
 	
+	static val FilenameFilter FEATURE_BUILD_FILTER = [ dir, name |
+		!name.startsWith('.') && name != 'pom.xml' && (dir.name.endsWith('.license') || name != 'build.properties')
+			&& !(new File(dir, name).isDirectory)
+	]
+	
 	def private generateFeatureBuildProperties(Feature feature) '''
-		bin.includes = feature.xml
+		bin.includes = «FOR file : new File('''«rootDir»/«p2gen.genPath»/«feature.path»''').listFiles(FEATURE_BUILD_FILTER).sort
+			SEPARATOR ',\\\n               '»«file.name»«ENDFOR»
 	'''
 	
 	def private void loadFeatures() {
-		for (path : p2gen.features) {
+		for (featurePath : p2gen.features) {
 			val feature = new Feature
-			feature.path = path
+			feature.path = featurePath
 			try {
-				val slurpResult = new XmlSlurper().parse(new File('''«rootDir»/«p2gen.genPath»/«path»/feature.xml'''))
+				val slurpResult = new XmlSlurper().parse(new File('''«rootDir»/«p2gen.genPath»/«featurePath»/feature.xml'''))
 				if (slurpResult.name == 'feature') {
 					feature.id = slurpResult.getProperty('@id')?.toString
 					feature.version = slurpResult.getProperty('@version')?.toString
@@ -361,7 +350,7 @@ class P2GenPlugin implements Plugin<Project> {
 					}
 				}
 			} catch (Exception e) {
-				logger.warn('Could not read feature.xml of ' + path, e)
+				logger.warn('Could not read feature.xml of ' + featurePath, e)
 			}
 			features += feature
 		}
