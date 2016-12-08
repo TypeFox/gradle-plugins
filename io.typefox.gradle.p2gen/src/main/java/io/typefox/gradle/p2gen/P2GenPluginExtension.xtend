@@ -35,6 +35,8 @@ class P2GenPluginExtension {
 	
 	val List<InstallableUnit> additionalUnits = newArrayList
 	
+	boolean zipRepository
+	
 	def void charset(Charset charset) {
 		this.charset = charset
 	}
@@ -123,6 +125,10 @@ class P2GenPluginExtension {
 		configure.call()
 		additionalUnits += result
 		return result
+	}
+	
+	def void zipRepository(boolean zipRepository) {
+		this.zipRepository = zipRepository
 	}
 	
 }

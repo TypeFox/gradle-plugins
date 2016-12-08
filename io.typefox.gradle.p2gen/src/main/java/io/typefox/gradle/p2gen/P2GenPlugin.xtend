@@ -221,6 +221,12 @@ class P2GenPlugin implements Plugin<Project> {
 										<copy todir="${root-dir}/«p2gen.localP2Repo»">
 											<fileset dir="${basedir}/target/repository/" />
 										</copy>
+										«IF p2gen.zipRepository»
+											<copy
+												file="${basedir}/target/«name».p2-repository-«version».zip"
+												toDir="${root-dir}/«p2gen.localP2Repo»">
+											</copy>
+										«ENDIF»
 									</tasks>
 								</configuration>
 							</execution>
