@@ -65,6 +65,16 @@ class P2GenPlugin implements Plugin<Project> {
 		project.subprojects.filter[!p2gen.excludes.contains(name)]
 	}
 	
+	def private getPomVersion() {
+		val version = project.version.toString
+		if (version.split('\\.').length == 4)
+			version.substring(0, version.lastIndexOf('.')) + '-SNAPSHOT'
+		else if (!version.endsWith('-SNAPSHOT'))
+			version + '-SNAPSHOT'
+		else
+			version
+	}
+	
 	def private generateParentPom() '''
 		<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -72,7 +82,7 @@ class P2GenPlugin implements Plugin<Project> {
 		
 			<groupId>«group»</groupId>
 			<artifactId>«name».releng</artifactId>
-			<version>«version»</version>
+			<version>«pomVersion»</version>
 			<packaging>pom</packaging>
 		
 			<properties>
@@ -143,7 +153,7 @@ class P2GenPlugin implements Plugin<Project> {
 									<artifact>
 										<groupId>«group»</groupId>
 										<artifactId>«name».target</artifactId>
-										<version>«version»</version>
+										<version>«pomVersion»</version>
 									</artifact>
 								</target>
 							«ENDIF»
@@ -182,7 +192,7 @@ class P2GenPlugin implements Plugin<Project> {
 			<parent>
 				<groupId>«group»</groupId>
 				<artifactId>«name».releng</artifactId>
-				<version>«version»</version>
+				<version>«pomVersion»</version>
 				<relativePath>..</relativePath>
 			</parent>
 		
@@ -223,8 +233,8 @@ class P2GenPlugin implements Plugin<Project> {
 										</copy>
 										«IF p2gen.zipRepository»
 											<copy
-												file="${basedir}/target/«name».p2-repository-«version».zip"
-												toDir="${root-dir}/«p2gen.localP2Repo»/..">
+												file="${basedir}/target/«name».p2-repository-«pomVersion».zip"
+												tofile="${root-dir}/«p2gen.localP2Repo»/../«name».p2-repository-«version».zip">
 											</copy>
 										«ENDIF»
 									</tasks>
@@ -290,7 +300,7 @@ class P2GenPlugin implements Plugin<Project> {
 			<parent>
 				<groupId>«group»</groupId>
 				<artifactId>«name».releng</artifactId>
-				<version>«version»</version>
+				<version>«pomVersion»</version>
 				<relativePath>..</relativePath>
 			</parent>
 		</project>
@@ -328,7 +338,7 @@ class P2GenPlugin implements Plugin<Project> {
 			<parent>
 				<groupId>«group»</groupId>
 				<artifactId>«name».releng</artifactId>
-				<version>«version»</version>
+				<version>«pomVersion»</version>
 				<relativePath>..</relativePath>
 			</parent>
 		</project>

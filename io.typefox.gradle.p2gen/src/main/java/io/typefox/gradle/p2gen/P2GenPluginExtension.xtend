@@ -25,7 +25,7 @@ class P2GenPluginExtension {
 	
 	String localP2Repo = 'build/p2-repository'
 	
-	String tychoVersion = '0.25.0'
+	String tychoVersion = '0.26.0'
 	
 	val List<String> features = newArrayList
 	
