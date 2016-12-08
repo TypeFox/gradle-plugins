@@ -224,7 +224,7 @@ class P2GenPlugin implements Plugin<Project> {
 										«IF p2gen.zipRepository»
 											<copy
 												file="${basedir}/target/«name».p2-repository-«version».zip"
-												toDir="${root-dir}/«p2gen.localP2Repo»">
+												toDir="${root-dir}/«p2gen.localP2Repo»/..">
 											</copy>
 										«ENDIF»
 									</tasks>
