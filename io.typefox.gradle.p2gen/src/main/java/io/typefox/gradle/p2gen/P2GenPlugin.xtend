@@ -176,6 +176,14 @@ class P2GenPlugin implements Plugin<Project> {
 							</environments>
 						</configuration>
 					</plugin>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-packaging-plugin</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<format>«p2gen.qualifierFormat»</format>
+						</configuration>
+					</plugin>
 				</plugins>
 			</build>
 		</project>

@@ -27,6 +27,8 @@ class P2GenPluginExtension {
 	
 	String tychoVersion = '0.26.0'
 	
+	String qualifierFormat = "'v'yyyyMMdd-HHmm"
+	
 	val List<String> features = newArrayList
 	
 	val List<RepositoryDependency> dependencies = newArrayList
@@ -55,6 +57,10 @@ class P2GenPluginExtension {
 	
 	def void tychoVersion(String tychoVersion) {
 		this.tychoVersion = tychoVersion
+	}
+	
+	def void qualifierFormat(String qualifierFormat) {
+		this.qualifierFormat = qualifierFormat
 	}
 	
 	def void feature(String feature) {
