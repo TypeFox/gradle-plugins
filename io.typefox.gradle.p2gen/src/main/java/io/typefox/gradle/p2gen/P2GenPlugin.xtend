@@ -29,7 +29,7 @@ class P2GenPlugin implements Plugin<Project> {
 	override apply(Project project) {
 		this.project = project
 		this.p2gen = project.extensions.create(EXTENSION_NAME, P2GenPluginExtension)
-		project.task('generateP2Build') => [
+		project.tasks.create('generateP2Build') [
 			group = 'Build Setup'
 			description = 'Generates a Tycho build to assemble a P2 repository.'
 			
