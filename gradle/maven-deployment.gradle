@@ -1,23 +1,7 @@
 //------------------------------------------------------
-// Create additional sources and Javadoc artifacts
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-	classifier = 'sources'
-	from sourceSets.main.allSource
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-	classifier = 'javadoc'
-	from javadoc.destinationDir
-}
-
-artifacts {
-	archives sourcesJar, javadocJar
-}
-
-//------------------------------------------------------
 // Sign the artifacts if the signing info is complete
 
+apply plugin: 'maven'
 apply plugin: 'signing'
 
 signing {
@@ -32,8 +16,6 @@ if (!project.hasProperty('signing.secretKeyRingFile') || !project.property('sign
 
 //------------------------------------------------------
 // Configuration function for generated POMs
-
-apply plugin: 'maven'
 
 def configurePom = { pom ->
 	pom.project {
@@ -50,9 +32,10 @@ def configurePom = { pom ->
 		}
 		developers {
 			developer {
-				name 'Miro Spönemann'
-				email 'miro.spoenemann@typefox.io'
-				organizationUrl 'http://typefox.io'
+				name = 'Miro Spönemann'
+				email = 'miro.spoenemann@typefox.io'
+				organization = 'TypeFox'
+				organizationUrl = 'http://typefox.io'
 			}
 		}
 		scm {
@@ -71,7 +54,7 @@ task createLocalMavenRepo(type: Upload) {
 	description = 'Create or update the local Maven repository'
 	configuration = configurations.archives
 	repositories.mavenDeployer {
-		repository(url: "file:" + file("../build/maven-repository"))
+		repository(url: "file:" + file("${rootDir}/build/maven-repository"))
 		afterEvaluate {
 			configurePom(pom)
 		}
