@@ -9,7 +9,7 @@ ext.xtextVersion = '2.10.0'
 
 subprojects {
 	group = 'io.typefox.gradle'
-	version = '0.1.0'
+	version = '0.2.0-SNAPSHOT'
 	
 	apply plugin: 'org.xtext.xtend'
 	apply plugin: 'eclipse'
