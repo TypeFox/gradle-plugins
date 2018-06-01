@@ -1,11 +1,11 @@
 buildscript {
 	repositories.jcenter()
 	dependencies {
-		classpath 'org.xtext:xtext-gradle-plugin:1.0.15'
+		classpath 'org.xtext:xtext-gradle-plugin:1.0.21'
 	}
 }
 
-ext.xtextVersion = '2.10.0'
+ext.xtextVersion = '2.14.0'
 
 subprojects {
 	group = 'io.typefox.gradle'

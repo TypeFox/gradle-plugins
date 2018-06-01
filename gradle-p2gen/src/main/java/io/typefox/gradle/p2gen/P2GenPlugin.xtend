@@ -317,7 +317,7 @@ class P2GenPlugin implements Plugin<Project> {
 	def private generateTargetFile() '''
 		<?xml version="1.0" encoding="UTF-8"?>
 		<?pde version="3.8"?>
-		<target name="org.eclipse.xtext.helios.target" sequenceNumber="0">
+		<target name="org.eclipse.«name.replace('-',".")».target" sequenceNumber="0">
 			<locations>
 				«FOR dep : p2gen.dependencies»
 					<location includeAllPlatforms="false" includeConfigurePhase="«dep.includeConfigurePhase»" includeMode="planner" includeSource="«dep.includeSource»" type="InstallableUnit">
